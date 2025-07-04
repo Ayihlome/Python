@@ -1,10 +1,11 @@
 import json
 import socket
 import re
+import threading
 import sqlalchemy
 from datetime import datetime
 
-from Database import SessionLocal, Movies, Sales, startupDB
+from Database import SessionLocal, Movies, Sales, startupDB, addMovie, updateMovie, changeNoOfTickets, deleteMovie, sale, showAll
 
 '''
 All data will be sent via WebSocket in JSON format:
@@ -28,61 +29,32 @@ def validInput(pattern, fields):
 # CRUD operations
 db_session = SessionLocal()
 
-def addMovie(db_session, title, cinema_room, release_date, end_date, tickets_available, ticket_price ):
-    newMovie = Movies(title, cinema_room, release_date, end_date, tickets_available, ticket_price)
-    db_session.add(newMovie)
-    db_session.commit()
-    return newMovie
 
-def updateMovie(db_session, movie_id, newData):
-    newEntry = db_session.query(Movies).filter_by(movie_id=movie_id).update(newData)
-    db_session.commit()
-    return newEntry
-
-def changeNoOfTickets (db_session, movie_id, newAmount):
-    newEntry = db_session.query(Movies).filter_by(movie_id=movie_id).update({
-        "tickets_available": newAmount
-    })
-    db_session.commit()
-    return newEntry
-
-def deleteMovie(db_session, movie_id):
-    deleteItem = db_session.query(Movies).filter_by(movie_id=movie_id).first()
-    db_session.delete(deleteItem)
-    db_session.commit()
-
-def showAll (db_session):
-    return db_session.query(Movies).all()
-
-def sale (db_session, movie_id, customer_name, number_of_tickets):
-    # check if movie exists
-    movie = db_session.query(Movies).filter_by(movie_id=movie_id).first()
-    if not movie:
-        return {"status": "error","error": "Invalid input"}
-    
-    totalPrice = movie.ticket_price * number_of_tickets
-    
-    newSale = Sales(movie_id=movie_id, customer_name=customer_name, number_of_tickets=number_of_tickets, total=totalPrice)
-    # update the movie tickets available
-    db_session.query(Movies).filter_by(movie_id=movie.movie_id).update({
-        "tickets_available": movie.tickets_available - number_of_tickets #sold
-    })
-    db_session.commit()
-    return newSale.as_dict()
+def logging(action, addr, msg):
+    # write to a file all actions performed
+    try:
+        with open('logfile.txt', "+a") as file:
+            file.write(f"[{action}] [FROM {addr}]: {msg}------{datetime.now().strftime("%Y-%m-%d %H:%M:%S")} \n")
+    except Exception as e:
+        print(f"Logging error: {e}")
 
 
 # Websocket handler
 # JSON data is filtered, CRUD functions are called, Response sent
 # At this stage we can try input validation
 # async def handler(messages):
-def handler(client):
+def handler(client, addr):
     #for each connection we create a db session
     db = SessionLocal()
+    logging("Connection", addr, "new client connected to the server")
+    
+    
     try:
         while True:
             # load data
             request = client.recv(1024)
             if not request:
+                print("Gracefully disconnected...")
                 break
             try:
                 message = request.decode()
@@ -124,6 +96,8 @@ def handler(client):
                         newItem = addMovie(db, title, cinema_room, release_date, end_date, tickets_available, ticket_price)
                         response = {"status": "ok", "item": newItem.as_dict() }
                         print(f"new entry complete: {newItem.title}")
+                        logging(action, addr, f"new entry complete: {newItem.title}")
+                        
                     except sqlalchemy.exc.IntegrityError as e:
                         print(f"Integrity error : {e}")
                         response = {"status": "error", "error":"cinema room is between 1 and 7"}
@@ -160,6 +134,8 @@ def handler(client):
                         updateMovie(db, movie_id=movie_id, newData=newData)
                         response = {"status": "ok", "newMovie":newData}
                         print("new entry made")
+                        logging(action, addr, f"movie updated :{movie_id} -> {newData}")
+                        
                     except sqlalchemy.exc.IntegrityError as e:
                         print(f"Integrity error : {e}")
                         response = {"status": "error", "error":"cinema room is between 1 and 7"}
@@ -182,16 +158,12 @@ def handler(client):
                 if not delItem:
                     response = {"status": "error", "error":"Movie not found"}
                     print("invalid user input, movie ID not found")
-                
                 else:
                     deleteMovie(db, delItem)
                     response = {"status": "ok"}
                     print(f"movie entry removed: id:{delItem}")
-            
-            elif action == "test":
-                print("Testing connection and JSON data")
-                response = {"status": "ok", "message": "Server is live and working"}
-                
+                    logging(action, addr, f"movie removed: {delItem}")
+                    
             
             elif action == "load":
                 print("Fetching all movies...")
@@ -200,6 +172,7 @@ def handler(client):
                 for movie in movies:
                     print(movie.title)
                 response = {"status": "ok", "record": [movie.as_dict() for movie in movies]}
+                
             
             elif action == "sale":
                 print("processing sale...")
@@ -234,6 +207,8 @@ def handler(client):
                     newSale = sale(db, movie_id=movie_id, customer_name=customer_name, number_of_tickets=noOfTickets)
                     response = {"status": "ok", "sale": newSale}
                     print("Sale successful")
+                    logging(action, addr, f"movie ticket sold for {movie_id} (tickets:{noOfTickets}) by {customer_name}")
+                    
             
             else:
                 response = {"status": "error", "error":"Command not found"}
@@ -241,18 +216,21 @@ def handler(client):
             
             # send back response 
             client.send(json.dumps(response).encode('utf-8'))
+    except ConnectionResetError:
+        print(f"[DISCONNECTED] Client {addr} connection reset")
     # except Exception as e:
     #     print(f"Error from Handler: {e}")
     #     response = {"status": "error", "error":"system error"}
     #     client.send(json.dumps(response).encode('utf-8'))
     finally:
         db.close()
-        # client.close()
+        print(f"[CLOSED] Client {addr} connection closed")
+
 
 # Web Sockets route and ports
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-port = 8000
-host = "0.0.0.0" 
+port = 12345
+host = "localhost" 
 server_socket.bind((host, port))
 try:
     server_socket.listen(10)
@@ -263,32 +241,6 @@ except OSError as e:
 while True:
     client, addr = server_socket.accept()
     print(f"Connection from: {addr}")
-    handler(client)
+    handler(client, addr)
     server_socket.close()
-    break
-
-
-'''
-elif action == "update tickets":
-                print("Updating ticket amount...")
-                movie_id = payload.get("movie_id")
-                newAmount = payload.get("newAmount")
-                
-                # input validation 
-                pattern = r"[0-9]"
-                fields = [movie_id, newAmount]
-                if not validInput(pattern, fields):
-                    print("invalid user input")
-                    response = {"status": "error", "error": "Invalid input"}
-                elif not movie_id:
-                    response = {"status": "error", "error": "movie not found"}
-                    print("invalid user input, movie not found")
-                elif not newAmount:
-                    response = {"status": "error", "error": "No amount added"}
-                    print("invalid user input, No amount added")
-                else:
-                    entry = changeNoOfTickets(db, movie_id=movie_id, newAmount=newAmount)
-                    response = {"status": "ok", "entry": entry}
-                    print(f"Update complete (movie id: {movie_id})")
-
-'''
+    # break

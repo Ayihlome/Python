@@ -25,7 +25,7 @@ class Movies(Base):
     # Relationship with the sales table for easy access to related data
     sales = relationship("Sales", back_populates="movie")
     
-    def __init__(self, title, cinema_room, release_date, end_date, tickets_available, ticket_price):
+    def __init__(self, title, cinema_room, release_date, end_date, tickets_available, ticket_price ):
         self.title = title
         self.cinema_room = cinema_room
         self.release_date = release_date
@@ -43,6 +43,7 @@ class Movies(Base):
             "tickets_available": self.tickets_available,
             "ticket_price": self.ticket_price
         }
+
 
 class Sales(Base):
     __tablename__ = "Sales"
@@ -69,10 +70,58 @@ class Sales(Base):
         "Number of tickets": self.number_of_tickets,
         "total" : self.total
         }
+    
+    # def addMovie(self, title, cinema_room, release_date, end_date, tickets_available, ticket_price ):
+    # newMovie = Movies(title, cinema_room, release_date, end_date, tickets_available, ticket_price)
+    # db_session.add(newMovie)
+    # db_session.commit()
+    # return newMovie
 
 def startupDB():
     Base.metadata.create_all(bind=engine) 
     # basically says: if table doesn't already exist create it now
+
+def addMovie(db_session, title, cinema_room, release_date, end_date, tickets_available, ticket_price ):
+    newMovie = Movies(title, cinema_room, release_date, end_date, tickets_available, ticket_price)
+    db_session.add(newMovie)
+    db_session.commit()
+    return newMovie
+
+def updateMovie(db_session, movie_id, newData):
+    newEntry = db_session.query(Movies).filter_by(movie_id=movie_id).update(newData)
+    db_session.commit()
+    return newEntry
+
+def changeNoOfTickets (db_session, movie_id, newAmount):
+    newEntry = db_session.query(Movies).filter_by(movie_id=movie_id).update({
+        "tickets_available": newAmount
+    })
+    db_session.commit()
+    return newEntry
+
+def deleteMovie(db_session, movie_id):
+    deleteItem = db_session.query(Movies).filter_by(movie_id=movie_id).first()
+    db_session.delete(deleteItem)
+    db_session.commit()
+
+def showAll (db_session):
+    return db_session.query(Movies).all()
+
+def sale (db_session, movie_id, customer_name, number_of_tickets):
+    # check if movie exists
+    movie = db_session.query(Movies).filter_by(movie_id=movie_id).first()
+    if not movie:
+        return {"status": "error","error": "Invalid input"}
+    
+    totalPrice = movie.ticket_price * number_of_tickets
+    
+    newSale = Sales(movie_id=movie_id, customer_name=customer_name, number_of_tickets=number_of_tickets, total=totalPrice)
+    # update the movie tickets available
+    db_session.query(Movies).filter_by(movie_id=movie.movie_id).update({
+        "tickets_available": movie.tickets_available - number_of_tickets #sold
+    })
+    db_session.commit()
+    return newSale.as_dict()
 
 if __name__ == "__main__":
     startupDB()
