@@ -1,59 +1,7 @@
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Delete A Movie</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-  </head>
-
-  <body class="bg-gray-100 min-h-screen">
-    <!-- Header -->
-    <header
-      class="bg-gradient-to-r from-orange-600 to-amber-600 text-white shadow-lg"
-    >
-      <div class="container mx-auto px-6 py-4">
-        <h1 class="text-3xl font-bold mb-2">Delete A Movie</h1>
-        <p class="text-orange-100 mb-6">
-          Delete a movie from the booking system
-        </p>
-
-        <!-- Navigation Menu -->
-        <nav class="border-t border-purple-400 pt-4">
-          <ul class="flex space-x-8">
-            <li>
-              <a
-                href="{{ url_for('homePage') }}"
-                class="hover:text-purple-200 font-medium transition-colors"
-                >Home</a
-              >
-            </li>
-            <li>
-              <a
-                href="{{ url_for('addMovie') }}"
-                class="hover:text-purple-200 font-medium transition-colors"
-                >Add Movie</a
-              >
-            </li>
-            <li>
-              <a
-                href="{{ url_for('updateMovie') }}"
-                class="hover:text-purple-200 font-medium transition-colors"
-                >Update Movie</a
-              >
-            </li>
-            <li>
-              <a
-                href="{{ url_for('deleteMovie') }}"
-                class="hover:text-purple-200 font-medium transition-colors"
-                >Delete Movie</a
-              >
-            </li>
-          </ul>
-        </nav>
-      </div>
-    </header>
-
+{% extends 'base.html' %}
+{% block title %}Delete A Movie{%endblock%}
+<header nclass="bg-gradient-to-r from-orange-600 to-amber-600 text-white shadow-lg">
+{%block content%}
     <!-- Main Content -->
     <main class="container mx-auto px-6 py-8">
       <div class="max-w-2xl mx-auto">
@@ -63,117 +11,126 @@
 
         <!-- Movie Selection -->
         <div class="bg-white rounded-lg shadow-md p-8">
-          <h3 class="text-lg font-semibold text-gray-700 mb-4">
-            Select Movie to Delete
-          </h3>
-          <div class="mb-6">
-            <label
-              for="movie_select"
-              class="block text-sm font-medium text-gray-700 mb-2"
-              >Choose Movie:</label
-            >
-            <select
-              name="movie_select"
-              id="movie_select"
-              required
-              onchange="loadMovieDetails()"
-            >
-              <option value="">Select a movie to delete...</option>
-              {% for movie in movies %}
-              <option value="{{ movie.movie_id }}">{{ movie.title }}</option>
-              {% endfor %}
-            </select>
-          </div>
-
-          <!-- Movie Details Display -->
-          <div
-            id="movieDetails"
-            class="hidden bg-orange-50 border border-orange-200 rounded-lg p-4 mb-6"
+          <form
+            action="{{ url_for('deleteMovie')}}"
+            method="POST"
+            onsubmit="return confirmDelete();"
           >
-            <h4 class="text-lg font-semibold text-orange-800 mb-3">
-              Movie Details
-            </h4>
-            <div class="grid grid-cols-2 gap-4 mb-4">
-              <div>
-                <label class="block text-sm font-medium text-orange-700 mb-1"
-                  >Title:</label
-                >
-                <span id="movieTitle" class="text-lg font-bold text-orange-800"
-                  >-</span
-                >
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-orange-700 mb-1"
-                  >Release Date:</label
-                >
-                <span
-                  id="movieReleaseDate"
-                  class="text-lg font-bold text-orange-800"
-                  >-</span
-                >
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-orange-700 mb-1"
-                  >End Date:</label
-                >
-                <span
-                  id="movieEndDate"
-                  class="text-lg font-bold text-orange-800"
-                  >-</span
-                >
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-orange-700 mb-1"
-                  >Cinema Room:</label
-                >
-                <span id="movieRoom" class="text-lg font-bold text-orange-800"
-                  >-</span
-                >
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-orange-700 mb-1"
-                  >Tickets Available:</label
-                >
-                <span
-                  id="movieTickets"
-                  class="text-lg font-bold text-orange-800"
-                  >-</span
-                >
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-orange-700 mb-1"
-                  >Ticket Price:</label
-                >
-                <span id="moviePrice" class="text-lg font-bold text-orange-800"
-                  >-</span
-                >
+            <h3 class="text-lg font-semibold text-gray-700 mb-4">
+              Select Movie to Delete
+            </h3>
+            <div class="mb-6">
+              <label
+                for="movie_select"
+                class="block text-sm font-medium text-gray-700 mb-2"
+                >Choose Movie:</label
+              >
+              <select
+                name="movie_select"
+                id="movie_select"
+                required
+                onchange="showMovieDetails()"
+              >
+                <option value="">Select a movie to delete...</option>
+                {% for movie in movies %}
+                <option value="{{ movie.movie_id }}">{{ movie.title }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <!-- Movie Details Display -->
+            <div
+              id="movieDetails"
+              class="hidden bg-orange-50 border border-orange-200 rounded-lg p-4 mb-6"
+            >
+              <h4 class="text-lg font-semibold text-orange-800 mb-3">
+                Movie Details
+              </h4>
+              <div class="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label class="block text-sm font-medium text-orange-700 mb-1"
+                    >Title:</label
+                  >
+                  <span
+                    id="movieTitle"
+                    class="text-lg font-bold text-orange-800"
+                    >-</span
+                  >
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-orange-700 mb-1"
+                    >Release Date:</label
+                  >
+                  <span
+                    id="movieReleaseDate"
+                    class="text-lg font-bold text-orange-800"
+                    >-</span
+                  >
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-orange-700 mb-1"
+                    >End Date:</label
+                  >
+                  <span
+                    id="movieEndDate"
+                    class="text-lg font-bold text-orange-800"
+                    >-</span
+                  >
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-orange-700 mb-1"
+                    >Cinema Room:</label
+                  >
+                  <span id="movieRoom" class="text-lg font-bold text-orange-800"
+                    >-</span
+                  >
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-orange-700 mb-1"
+                    >Tickets Available:</label
+                  >
+                  <span
+                    id="movieTickets"
+                    class="text-lg font-bold text-orange-800"
+                    >-</span
+                  >
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-orange-700 mb-1"
+                    >Ticket Price:</label
+                  >
+                  <span
+                    id="moviePrice"
+                    class="text-lg font-bold text-orange-800"
+                    >-</span
+                  >
+                </div>
               </div>
             </div>
-          </div>
 
-          <!-- Delete Button -->
-          <div class="flex space-x-4">
-            <button
-              type="button"
-              onclick="deleteMovie()"
-              id="deleteBtn"
-              disabled
-              class="flex-1 bg-gradient-to-r from-orange-600 to-amber-600 text-white font-medium py-3 px-6 rounded-md hover:from-orange-700 hover:to-amber-700 transition-all duration-200 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Delete Movie
-            </button>
-            <button
-              type="button"
-              onclick="clearSelection()"
-              class="flex-1 bg-gray-500 text-white font-medium py-3 px-6 rounded-md hover:bg-gray-600 transition-all duration-200 shadow-md hover:shadow-lg"
-            >
-              Clear Selection
-            </button>
-          </div>
+            <!-- Delete Button -->
+            <div class="flex space-x-4">
+              <button
+                type="submit"
+                id="deleteBtn"
+                disabled
+                class="flex-1 bg-gradient-to-r from-orange-600 to-amber-600 text-white font-medium py-3 px-6 rounded-md hover:from-orange-700 hover:to-amber-700 transition-all duration-200 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Delete Movie
+              </button>
+              <button
+                type="button"
+                onclick="clearSelection()"
+                class="flex-1 bg-gray-500 text-white font-medium py-3 px-6 rounded-md hover:bg-gray-600 transition-all duration-200 shadow-md hover:shadow-lg"
+              >
+                Clear Selection
+              </button>
+            </div>
+          </form>
         </div>
       </div>
     </main>
-
+{%endblock%}
     <!-- Footer -->
     <footer class="bg-gray-800 text-white py-6 mt-12">
       <div class="container mx-auto px-6 text-center">
@@ -183,48 +140,18 @@
 
     <!-- JavaScript for loading movie details -->
     <script>
-      // Sample movie data - in a real application, this would come from a database
+      {%block script%}
       const movieData = {
-        movie1: {
-          title: "Avengers: Endgame",
-          release_date: "2019-04-26",
-          end_date: "2019-07-26",
-          cinema_room: "Room 1",
-          tickets_available: 120,
-          ticket_price: 15.99,
+        {% for movie in movies %}
+        "{{ movie.movie_id }}": {
+          title: "{{ movie.title }}",
+          release_date: "{{ movie.release_date }}",
+          end_date: "{{ movie.end_date }}",
+          cinema_room: "{{ movie.cinema_room }}",
+          tickets_available: {{ movie.tickets_available }},
+          ticket_price: {{ movie.ticket_price }}
         },
-        movie2: {
-          title: "Spider-Man: No Way Home",
-          release_date: "2021-12-17",
-          end_date: "2022-03-17",
-          cinema_room: "Room 2",
-          tickets_available: 95,
-          ticket_price: 14.99,
-        },
-        movie3: {
-          title: "Black Panther: Wakanda Forever",
-          release_date: "2022-11-11",
-          end_date: "2023-02-11",
-          cinema_room: "Room 3",
-          tickets_available: 80,
-          ticket_price: 13.99,
-        },
-        movie4: {
-          title: "The Batman",
-          release_date: "2022-03-04",
-          end_date: "2022-06-04",
-          cinema_room: "Room 4",
-          tickets_available: 110,
-          ticket_price: 12.99,
-        },
-        movie5: {
-          title: "Top Gun: Maverick",
-          release_date: "2022-05-27",
-          end_date: "2022-08-27",
-          cinema_room: "Room 5",
-          tickets_available: 75,
-          ticket_price: 16.99,
-        },
+        {% endfor %}
       };
 
       function showMovieDetails() {
@@ -282,6 +209,15 @@
         document.getElementById("movieDetails").classList.add("hidden");
         document.getElementById("deleteBtn").disabled = true;
       }
+
+      function confirmDelete() {
+        const movieSelect = document.getElementById("movie_select");
+        const selectedMovie = movieSelect.value;
+        if (!selectedMovie) return false;
+        const movie = movieData[selectedMovie];
+        return confirm(`Are you sure you want to delete "${movie.title}"? This action cannot be undone.`);
+      }
+      {%endblock%}
     </script>
   </body>
 </html>

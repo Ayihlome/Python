@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{%block title%}Movie Ticket Booking System{%endblock%}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-gray-100 min-h-screen">
+    <!-- Flash Messages -->
+    <div class="fixed top-6 right-6 z-50 max-w-xs w-full">
+      {% with messages = get_flashed_messages(with_categories=true) %} {% if
+      messages %} {% for category, message in messages %}
+      <div
+        class="flash-message px-4 py-3 mb-4 rounded shadow-lg relative animate-slideIn {% if category == 'success' %} bg-green-100 border border-green-300 text-green-800 {% elif category == 'error' %} bg-red-100 border border-red-300 text-red-800 {% elif category == 'info' %} bg-blue-100 border border-blue-300 text-blue-800 {% elif category == 'warning' %} bg-yellow-100 border border-yellow-300 text-yellow-800 {% endif %}"
+        id="flash-{{ loop.index }}"
+      >
+        <span
+          class="flash-close absolute top-2 right-3 cursor-pointer text-xl font-bold opacity-60 hover:opacity-100"
+          onclick="closeFlash({{ loop.index }})"
+          >&times;</span
+        >
+        {{ message }}
+      </div>
+      {% endfor %} {% endif %} {% endwith %}
+    </div>
+    <!-- Header -->
+    <header
+      class="bg-gradient-to-r {{ header_from_color | default('from-purple-600') }} {{ header_to_color | default('to-blue-600') }} text-white shadow-lg"
+    >
+      <div class="container mx-auto px-6 py-4">
+        <h1 class="text-3xl font-bold mb-2">
+          {{ header_title | default("Movie Ticket Booking System") }}
+        </h1>
+        <p class="text-purple-100 mb-6">
+          {{ header_subtitle | default("Book your favorite movies online") }}
+        </p>
+
+        <!-- Navigation Menu -->
+        <nav class="border-t border-purple-400 pt-4">
+          <ul class="flex space-x-8">
+            <li>
+              <a
+                href="{{ url_for('homePage') }}"
+                class="hover:text-purple-200 font-medium transition-colors"
+                >Home</a
+              >
+            </li>
+            <li>
+              <a
+                href="{{ url_for('addMovie') }}"
+                class="hover:text-purple-200 font-medium transition-colors"
+                >Add Movie</a
+              >
+            </li>
+            <li>
+              <a
+                href="{{ url_for('updateMovie') }}"
+                class="hover:text-purple-200 font-medium transition-colors"
+                >Update Movie</a
+              >
+            </li>
+            <li>
+              <a
+                href="{{ url_for('deleteMovie') }}"
+                class="hover:text-purple-200 font-medium transition-colors"
+                >Delete Movie</a
+              >
+            </li>
+          </ul>
+        </nav>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    {%block content%}
+    <h1>Yoo</h1>
+    {%endblock%}
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white py-6 mt-12">
+      <div class="container mx-auto px-6 text-center">
+        <p>&copy; 2024 Movie Ticket Booking System. All rights reserved.</p>
+      </div>
+    </footer>
+
+    <!-- JavaScript for Movie Details -->
+    <script>
+        {%block script%}
+
+        {%endblock%}
+      // Flash message logic
+      setTimeout(function () {
+        const messages = document.querySelectorAll(".flash-message");
+        messages.forEach(function (msg) {
+          msg.classList.add("fade-out");
+          setTimeout(function () {
+            msg.remove();
+          }, 400);
+        });
+      }, 6000);
+
+      function closeFlash(index) {
+        const message = document.getElementById("flash-" + index);
+        if (message) {
+          message.classList.add("fade-out");
+          setTimeout(function () {
+            message.remove();
+          }, 400);
+        }
+      }
+    </script>
+  </body>
+</html>

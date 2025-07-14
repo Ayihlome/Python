@@ -5,7 +5,7 @@ import threading
 import sqlalchemy
 from datetime import datetime
 
-from Database import SessionLocal, Movies, Sales, startupDB, addMovie, updateMovie, changeNoOfTickets, deleteMovie, sale, showAll
+from Database import SessionLocal, startupDB, addMovie, updateMovie, changeNoOfTickets, deleteMovie, sale, showAll
 
 '''
 All data will be sent via WebSocket in JSON format:
@@ -34,7 +34,7 @@ def logging(action, addr, msg):
     # write to a file all actions performed
     try:
         with open('logfile.txt', "+a") as file:
-            file.write(f"[{action}] [FROM {addr}]: {msg}------{datetime.now().strftime("%Y-%m-%d %H:%M:%S")} \n")
+            file.write(f"[{action}] [FROM {addr}]: {msg}------{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} \n")
     except Exception as e:
         print(f"Logging error: {e}")
 
@@ -77,7 +77,7 @@ def handler(client, addr):
                 release_date_str = payload.get("release_date")
                 end_date_str = payload.get("end_date")
                 tickets_available = payload.get("tickets_available")
-                ticket_price = payload.get("ticket_price")
+                ticket_price = payload. get("ticket_price")
                 
                 # input validation:
                 # Convert string to date
@@ -131,8 +131,17 @@ def handler(client, addr):
                         response = {"status": "error", "error": "Invalid movie ID"}
                 else:
                     try:
+                        if newData.get('end_date'):
+                            end_date_str = newData['end_date']  # Get the string from newData
+                            end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
+                            newData['end_date'] = end_date  # Replace string with date object
+                            
+                        if newData.get('release_date'):
+                            release_date_str = newData['release_date']  # Get the string from newData
+                            release_date = datetime.strptime(release_date_str, '%Y-%m-%d').date()
+                            newData['release_date'] = release_date 
                         updateMovie(db, movie_id=movie_id, newData=newData)
-                        response = {"status": "ok", "newMovie":newData}
+                        response = {'status': 'ok'}
                         print("new entry made")
                         logging(action, addr, f"movie updated :{movie_id} -> {newData}")
                         
@@ -232,15 +241,22 @@ server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 port = 12345
 host = "localhost" 
 server_socket.bind((host, port))
+# server_socket.settimeout(10)
 try:
     server_socket.listen(10)
     print(f"Server listening on: {host}:{port}")
-except OSError as e:
-    print(f"Error: {e}")
-
-while True:
-    client, addr = server_socket.accept()
-    print(f"Connection from: {addr}")
-    handler(client, addr)
+    while True:
+        client, addr = server_socket.accept()
+        print(f"Connection from: {addr}")
+        
+        client = threading.Thread(target=handler, args=(client, addr))
+        client.daemon = True
+        client.start()
+except KeyboardInterrupt:
+    print("\nServer shutting down...")
+except Exception as e :
+    print(f"Conection error: {e}")
+finally:
     server_socket.close()
-    # break
+
+
