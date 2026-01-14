@@ -26,6 +26,29 @@ def TestNumber (number):
          correct = True
          print("CORRECT!!!!!")
          print("You did it in " + str(guesses))
+
+      if correct:
+         quary = input("Would you like to try again? [Y/N]: ")
+         if quary == "Y":
+            print ("second attempt")
+            redo = True
+         elif quary == "N":
+            print("Thank you for playing :) ")
+            redo = False
+     return redo
+
 # end function
 
+if redo == False :
+    print("Thank you for playing :) ")
+else: 
+   while redo:
+     print ("redo")
+     number = int(input(" Guess the lucky number between 1 to 100: "))
+     guesses = 1
+     TestNumber(number)
+
+
+
+# Intial calling of function
 TestNumber(number)
